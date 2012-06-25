@@ -3,3 +3,4 @@ description = Provides options for empty fields.
 core = 7.x
 package = Fields
 dependencies[] = field
+dependencies[] = field_formatter_settings
