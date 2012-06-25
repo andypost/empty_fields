@@ -27,8 +27,22 @@ Read more about installing modules at http://drupal.org/node/70151
 
 ACKNOWLEDGEMENTS
 ----------------
-Core implementation was based of 
+Core implementation was based of Field Delimiter module by Andrew Macpherson,
+(andrewmacpherson) and builds on the base concept started by Everett Zufelt in 
+a support request at http://drupal.org/node/1283974#comment-5385242.
+
+It is made possible with Dave Reids Field formatter settings module that plugs
+a couple of the holes found in the core Drupal Field API. 
 
 AUTHORS
 -------
 Alan D. - http://drupal.org/user/198838
+
+REFERENCES
+----------
+
+Andrew Macpherson - http://drupal.org/user/265648
+Everett Zufelt - http://drupal.org/user/406552
+Dave Reid - http://drupal.org/user/53892
+Field Delimiter - http://drupal.org/project/field_delimiter
+Field formatter settings - http://drupal.org/project/field_formatter_settings
