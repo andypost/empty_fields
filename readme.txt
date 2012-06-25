@@ -4,8 +4,8 @@ Empty fields module - http://drupal.org/sandbox/aland/1658254
 DESCRIPTION
 ------------
 This module provides a way to show fields that are empty by new display
-formatter settings. These can be either an empty tag, "<none>" or custom
-text defined by the field administrator.
+formatter settings. These can be either custom text defined by the field
+administrator or the return value of a defined callback.
 
 REQUIREMENTS
 ------------
@@ -24,6 +24,40 @@ INSTALLATION
     The Empty Fields modules is found in the Fields section.
 
 Read more about installing modules at http://drupal.org/node/70151
+
+API
+---
+For specific use-cases, you can define a custom callback to generate
+dynamic content. 
+
+Firstly, implement hook_empty_field_callbacks()
+
+<?php
+/**
+ * Implements hook_empty_field_callbacks().
+ */
+function hook_empty_field_callbacks() {
+  $info['mymodule_datetimes'] = array(
+    'label' => t('Date and time summary'),
+    'callback' => 'mymodule_empty_datetime_field_callback',
+  );
+  return $info;
+}
+?>
+
+Then implement the callback.
+
+<?php
+/**
+ * Callback defined in hook_empty_field_callbacks(). 
+ */
+function mymodule_empty_datetime_field_callback($field_name, $context) {
+  return format_date(time());
+}
+?>
+
+The context has the entity_type, entity, view_mode as well as the empty
+field details, field and instance.
 
 ACKNOWLEDGEMENTS
 ----------------
