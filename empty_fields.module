@@ -108,7 +108,6 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
       continue;
     }
 
-    dpm($display);
     $markup = '';
     switch ($display['settings']['display_empty']) {
       case 'text':
