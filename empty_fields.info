@@ -1,0 +1,5 @@
+name = Empty Fields
+description = Provides options for empty fields.
+core = 7.x
+package = Fields
+dependencies[] = field

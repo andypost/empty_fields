@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function empty_fields_field_formatter_info_alter(&$info) {
+  foreach ($info as $formatter_key => &$formatter) {
+    $formatter['settings'] += array(
+      'display_empty' => '',
+      'custom_text' => '',
+    );
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary_alter().
+ */
+function empty_fields_field_formatter_settings_summary_alter(&$summary, $context) {
+  $field = $context['field'];
+  if ($field['type'] == 'image') {
+    return;
+  }
+  $display = $context['instance']['display'][$context['view_mode']];
+  $settings = $display['settings'];
+
+  $summary = empty($summary) ? '' : $summary . '<br />';
+  $settings += array('display_empty' => '');
+  switch ($settings['display_empty']) {
+    case 'none':
+      $summary .= t('Displays empty field with %tag', array('%tag' => '<none>'));
+      break;
+    case 'text':
+      $summary .= t('Displays empty field with custom text: %text', array('%text' => $settings['custom_text']));
+      break;
+    default:
+      $summary .= t('Empty field is hidden');
+      break;
+  }
+
+}
+
+/**
+ * Implements hook_field_formatter_settings_form_alter().
+ */
+function empty_fields_field_formatter_settings_form_alter(&$settings_form, $context) {
+  $field = $context['field'];
+  if ($field['type'] == 'image') {
+    return;
+  }
+  $display = $context['instance']['display'][$context['view_mode']];
+  $settings = $display['settings'];
+
+  $settings_form['display_empty'] = array(
+    '#type' => 'select',
+    '#title' => t('Empty display options'),
+    '#default_value' => $settings['display_empty'],
+    '#options' => array(
+      '' => t('Do not display'),
+      'none' => t('Display empty tag !tag', array('!tag' => '<none>')),
+      'text' => t('Display value'),
+    ),
+ 	);
+
+  // We can not nest this field, so use a prefix / suffix with padding to help
+  // to provide context.
+  $settings_form['custom_text'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Custom value'),
+    '#default_value' => $settings['custom_text'],
+    '#description' => t('This populates the field with the specificied empty value.'),
+  // fields[field_address_space][settings_edit_form][settings][display_empty]
+    '#states' => array(
+      'visible' => array(
+        ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][display_empty]"]' => array('value' => 'text'),
+      ),
+    ),
+    '#prefix' => '<div style="padding: 0 2em;">',
+    '#suffix' => '</div>',
+  );
+}
+
+/**
+ * Implements hook_field_attach_view_alter().
+ */
+function empty_fields_field_attach_view_alter(&$result, $context) {
+  if (empty($context['view_mode']) || empty($context['display']) || $context['view_mode'] != $context['display']) {
+    return;
+  }
+  $view_mode = $context['view_mode'];
+  $entity_type = $context['entity_type'];
+  $entity = $context['entity'];
+  $language = $context['language'];
+  list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  $rendered_elements = element_children($context);
+
+  foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
+    if (in_array($field_name, $rendered_elements)) {
+      continue;
+    }
+    $field = field_info_field($field_name);
+    if ($field['type'] == 'image') {
+      continue;
+    }
+
+    // Do not add field that is hidden in current display.
+    $display = field_get_display($instance, $view_mode, $entity);
+    if ($display['type'] == 'hidden' || empty($display['settings']['display_empty'])) {
+      continue;
+    }
+
+    dpm($display);
+    $markup = '';
+    switch ($display['settings']['display_empty']) {
+      case 'text':
+        $markup = filter_xss_admin($display['settings']['custom_text']);
+        break;
+      default:
+        $markup = '<none>';
+        break;
+    }
+
+    $result[$field_name] = array(
+      '#theme' => 'field',
+      '#title' => $instance['label'],
+      '#label_display' => $display['label'],
+      '#field_type' => $field['type'],
+      '#field_name' => $field_name,
+      '#bundle' => $bundle,
+      '#object' => $entity,
+      '#items' => array(
+        0 => array('value' => $markup),
+      ),
+      '#entity_type' => $entity_type,
+      '#weight' => $display['weight'],
+      0 => array(
+        '#markup' => $markup,
+      ),
+    );
+  }
+}
+
