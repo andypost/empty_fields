@@ -26,6 +26,17 @@ function empty_fields_field_formatter_settings_summary_alter(&$summary, $context
     case 'text':
       $summary .= t('Displays empty field with custom text: %text', array('%text' => $settings['custom_text']));
       break;
+
+    case 'callback':
+      $callback = empty_fields_get_empty_field_callbacks($settings['empty_callback']);
+      if (function_exists($callback['callback'])) {
+        $summary .= t('Displays empty field using the callback: %text', array('%text' => $callback['label']));
+      }
+      else {
+        $summary .= t('Displays empty field using the callback: <em>Missing callback</em>');
+      }
+      break;
+
     default:
       $summary .= t('Empty field is hidden');
       break;
@@ -126,17 +137,18 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
         break;
 
       case 'callback':
-        if (!empty($display['settings']['empty_callback'])) {
-          $callbacks = empty_fields_get_empty_field_callbacks();
-          if (!empty($callbacks[$display['settings']['empty_callback']])) {
-            $func = $callbacks[$display['settings']['empty_callback']]['callback'];
-            if (function_exists($func)) {
-              $context['display'] = $display;
-              $context['instance'] = $instance;
-              $context['field'] = $field;
-              $markup = (string) $func($field_name, $context);
-            }
+        $markup = FALSE;
+            if ($callback = empty_fields_get_empty_field_callbacks($display['settings']['empty_callback'])) {
+          $func = $callback['callback'];
+          if (function_exists($func)) {
+            $context['display'] = $display;
+            $context['instance'] = $instance;
+            $context['field'] = $field;
+            $markup = $func($field_name, $context);
           }
+        }
+        if ($markup === FALSE || is_null($markup)) {
+          continue 2;
         }
         break;
 
@@ -165,7 +177,7 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
 /**
  * Get all the empty field callbacks via hook_empty_field_callbacks().
  */
-function empty_fields_get_empty_field_callbacks() {
+function empty_fields_get_empty_field_callbacks($callback = NULL) {
   $info = &drupal_static(__FUNCTION__);
 
   if (!isset($info)) {
@@ -180,5 +192,8 @@ function empty_fields_get_empty_field_callbacks() {
     }
   }
 
+  if (isset($callback)) {
+    return isset($info[$callback]) ? $info[$callback] : NULL;
+  }
   return $info;
 }

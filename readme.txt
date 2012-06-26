@@ -16,7 +16,7 @@ INSTALLATION
 ------------
 1.  Place the Empty Fields modules into your modules directory.
     This is normally the "sites/all/modules" directory.
-    Also download and place the Field formatter settings module here to 
+    Also download and place the Field formatter settings module here too.
     http://drupal.org/project/field_formatter_settings
     
 
@@ -57,7 +57,39 @@ function mymodule_empty_datetime_field_callback($field_name, $context) {
 ?>
 
 The context has the entity_type, entity, view_mode as well as the empty
-field details, field and instance.
+field details, field and instance. If the callback returns FALSE or NULL,
+the empty field will not be rendered.
+
+This allows for more complex conditional includes:
+<?php
+/**
+ * Callback defined in hook_empty_field_callbacks().
+ *
+ * This tries to generate a date description if the date description is empty.
+ * This description is based off other fields on the node.
+ */
+function mymodule_empty_datetime_field_callback($field_name, $context) {
+  if ($field_name == 'field_date_text' && $context['entity_type'] == 'node') {
+    if ($desc = mymodule_get_date_description($context['entity'])) {
+      return $desc;
+    }
+    else {
+      // Return FALSE or NULL as we can not calculate the text description.
+      return FALSE;
+    }
+  }
+  // If another field, return nothing so that the empty field is not rendered.
+}
+
+/**
+ * Calculates the text from the field field_dates.
+ */
+function mymodule_get_date_description($node) {
+  if ($items = field_get_items('node', $node, 'field_dates')) {
+    return t("We have dates, but we aren't telling you!");
+  }
+}
+?>
 
 ACKNOWLEDGEMENTS
 ----------------
