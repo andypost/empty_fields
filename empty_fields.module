@@ -38,7 +38,7 @@ function empty_fields_field_formatter_settings_summary_alter(&$summary, $context
       break;
 
     case 'default':
-      $summary .= t('Displays the default field value');
+      $summary .= t('Displays empty field using default');
       break;
 
     default:
