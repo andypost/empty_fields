@@ -37,6 +37,10 @@ function empty_fields_field_formatter_settings_summary_alter(&$summary, $context
       }
       break;
 
+    case 'default':
+      $summary .= t('Displays the default field value');
+      break;
+
     default:
       $summary .= t('Empty field is hidden');
       break;
@@ -60,6 +64,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
       '' => t('Do not display'),
       'text' => t('Display value'),
       'callback' => t('Callback'),
+      'default' => t('Display default value (if set)'),
     ),
  	);
 
@@ -138,7 +143,7 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
 
       case 'callback':
         $markup = FALSE;
-            if ($callback = empty_fields_get_empty_field_callbacks($display['settings']['empty_callback'])) {
+        if ($callback = empty_fields_get_empty_field_callbacks($display['settings']['empty_callback'])) {
           $func = $callback['callback'];
           if (function_exists($func)) {
             $context['display'] = $display;
@@ -152,6 +157,34 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
         }
         break;
 
+      case 'default':
+        $items = field_get_default_value($entity_type, $entity, $field, $instance, $language);
+        $items = _field_filter_items($field, $items);
+        if (!empty($items)) {
+          // Too late to allow other modules to alter the results, so only
+          // display the first item.
+          $item = array_shift($items);
+          $element = field_view_value($entity_type, $entity, $field_name, $item, $display, $language);
+          if ($element) {
+            $result[$field_name] = array(
+              '#theme' => 'field',
+              '#title' => $instance['label'],
+              '#label_display' => $display['label'],
+              '#field_type' => $field['type'],
+              '#field_name' => $field_name,
+              '#bundle' => $bundle,
+              '#object' => $entity,
+              '#items' => array(0 => $item),
+              '#entity_type' => $entity_type,
+              '#weight' => $display['weight'],
+              '0' => $element,
+            );
+          }
+        }
+        // Fall through.
+
+      default:
+        continue 2;
     }
 
     $result[$field_name] = array(
