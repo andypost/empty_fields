@@ -155,7 +155,13 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
     $markup = '';
     switch ($display['settings']['display_empty']) {
       case 'text':
-        $markup = filter_xss_admin($display['settings']['custom_text']);
+        if (!empty($display['settings']['custom_text'])) {
+          $args = array(
+            $entity_type => $entity,
+          );
+          $markup = token_replace($display['settings']['custom_text'], $args, array('clear' => TRUE));
+          $markup = filter_xss_admin($markup);
+        }
         break;
 
       case 'callback':
@@ -163,10 +169,11 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
         if ($callback = empty_fields_get_empty_field_callbacks($display['settings']['empty_callback'])) {
           $func = $callback['callback'];
           if (function_exists($func)) {
-            $context['display'] = $display;
-            $context['instance'] = $instance;
-            $context['field'] = $field;
-            $markup = $func($field_name, $context);
+            $field_context = $context;
+            $field_context['display'] = $display;
+            $field_context['instance'] = $instance;
+            $field_context['field'] = $field;
+            $markup = $func($field_name, $field_context);
           }
         }
         if ($markup === FALSE || is_null($markup)) {
