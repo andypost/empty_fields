@@ -124,15 +124,32 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
   $rendered_elements = element_children($result);
 
   foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
-    if (in_array($field_name, $rendered_elements)) {
-      continue;
-    }
-    $field = field_info_field($field_name);
-
     // Do not add field that is hidden in current display.
     $display = field_get_display($instance, $view_mode, $entity);
     if ($display['type'] == 'hidden' || empty($display['settings']['display_empty'])) {
       continue;
+    }
+
+    // Some field types still render, so double check that these have content.
+    // To date, this is limited to the text fields that always save even if
+    // empty.
+    $field = field_info_field($field_name);
+    if (in_array($field_name, $rendered_elements)) {
+      switch ($field['type']) {
+        case 'text':
+        case 'text_with_summary':
+        case 'text_summary_or_trimmed':
+          foreach (element_children($result[$field_name]) as $delta) {
+            if (!empty($result[$field_name][$delta]['#markup']) || strlen($result[$field_name][$delta]['#markup'])) {
+              continue 3;
+            }
+          }
+          break;
+
+        default:
+          continue 2;
+
+      }
     }
 
     $markup = '';
