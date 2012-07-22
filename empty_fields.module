@@ -82,6 +82,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
     ),
     '#prefix' => '<div style="padding: 0 2em;">',
     '#suffix' => '</div>',
+    '#maxlength' => 255,
   );
 
   $callbacks = empty_fields_get_empty_field_callbacks();
