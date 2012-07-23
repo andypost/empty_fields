@@ -161,8 +161,10 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
     switch ($display['settings']['display_empty']) {
       case 'text':
         if (!empty($display['settings']['custom_text'])) {
+          global $user;
           $args = array(
             $entity_type => $entity,
+            'user' => $user,
           );
           $markup = t($display['settings']['custom_text']);
           $markup = token_replace($markup, $args, array('clear' => TRUE));
