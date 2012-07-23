@@ -160,7 +160,8 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
           $args = array(
             $entity_type => $entity,
           );
-          $markup = token_replace($display['settings']['custom_text'], $args, array('clear' => TRUE));
+          $markup = t($display['settings']['custom_text']);
+          $markup = token_replace($markup, $args, array('clear' => TRUE));
           $markup = filter_xss_admin($markup);
         }
         break;
