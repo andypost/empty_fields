@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Contains the implementation for the empty_fields module.
+ */
 
 /**
  * Implements hook_field_formatter_info_alter().
@@ -66,7 +70,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
       'callback' => t('Callback'),
       'default' => t('Display default value (if set)'),
     ),
- 	);
+  );
 
   // We can not nest this field, so use a prefix / suffix with padding to help
   // to provide context.
@@ -106,7 +110,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
       ),
       '#prefix' => '<div style="padding: 0 2em;">',
       '#suffix' => '</div>',
-   	);
+    );
   }
 }
 
@@ -208,7 +212,6 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
           }
         }
         // Fall through.
-
       default:
         continue 2;
     }
