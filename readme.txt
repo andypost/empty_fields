@@ -18,7 +18,7 @@ INSTALLATION
     This is normally the "sites/all/modules" directory.
     Also download and place the Field formatter settings module here too.
     http://drupal.org/project/field_formatter_settings
-    
+
 
 2.  Go to admin/build/modules. Enable the modules.
     The Empty Fields modules is found in the Fields section.
@@ -28,7 +28,7 @@ Read more about installing modules at http://drupal.org/node/70151
 API
 ---
 For specific use-cases, you can define a custom callback to generate
-dynamic content. 
+dynamic content.
 
 Firstly, implement hook_empty_field_callbacks()
 
@@ -49,7 +49,7 @@ Then implement the callback.
 
 <?php
 /**
- * Callback defined in hook_empty_field_callbacks(). 
+ * Callback defined in hook_empty_field_callbacks().
  */
 function mymodule_empty_datetime_field_callback($field_name, $context) {
   return format_date(time());
@@ -94,15 +94,16 @@ function mymodule_get_date_description($node) {
 ACKNOWLEDGEMENTS
 ----------------
 Core implementation was based of Field Delimiter module by Andrew Macpherson,
-(andrewmacpherson) and builds on the base concept started by Everett Zufelt in 
+(andrewmacpherson) and builds on the base concept started by Everett Zufelt in
 a support request at http://drupal.org/node/1283974#comment-5385242.
 
 It is made possible with Dave Reids Field formatter settings module that plugs
-a couple of the holes found in the core Drupal Field API. 
+a couple of the holes found in the core Drupal Field API.
 
 AUTHORS
 -------
 Alan D. - http://drupal.org/user/198838
+rypit   - http://drupal.org/user/868380
 
 REFERENCES
 ----------
