@@ -139,6 +139,12 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
     // To date, this is limited to the text fields that always save even if
     // empty.
     $field = field_info_field($field_name);
+
+    // But firstly, check if the user can access the field.
+    if (!field_access('view', $field, $entity_type, $entity)) {
+      continue;
+    }
+
     if (in_array($field_name, $rendered_elements)) {
       switch ($field['type']) {
         case 'text':
