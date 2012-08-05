@@ -45,7 +45,13 @@ class EmptyFieldText extends EmptyFieldHandler {
    *   A rendered string of html for display.
    */
   public function react($context) {
-    return filter_xss_admin(t('!empty_text', array('!empty_text' => $this->options['empty_text'])));
+    global $user;
+    $args = array(
+      $context['entity_type'] => $context['entity'],
+      'user' => $user,
+    );
+    $text = token_replace($this->options['empty_text'], $args, array('clear' => TRUE));
+    return filter_xss_admin(t('!empty_text', array('!empty_text' => $text)));
   }
 
   /**
