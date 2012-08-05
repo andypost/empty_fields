@@ -2,5 +2,7 @@ name = Empty Fields
 description = Provides options for displaying empty fields.
 core = 7.x
 package = Fields
+files[] = plugins/empty_fields_handler.inc
+files[] = plugins/empty_fields_handler_text.inc
 dependencies[] = field
 dependencies[] = field_formatter_settings

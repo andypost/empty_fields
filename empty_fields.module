@@ -9,12 +9,79 @@
  */
 function empty_fields_field_formatter_info_alter(&$info) {
   foreach ($info as $formatter_key => &$formatter) {
-    $formatter['settings'] += array(
-      'display_empty' => '',
-      'custom_text' => '',
-      'empty_callback' => '',
-    );
+    $formatter['settings']['empty_fields_handler'] = '';
+    foreach (empty_fields_plugins() as $class_name => $title) {
+      $plugin = new $class_name();
+      foreach ($plugin->form() as $field_id => $default) {
+        $field_name = empty_fields_generate_field_name($field_id, $class_name);
+        $formatter['settings'][$field_name] = $default;
+      }
+    }
   }
+}
+
+/**
+ * Loads a plugin from static cache if available.
+ *
+ * @param array $view_mode_settings
+ *   The display settings for the view mode.
+ *
+ * @return emptyfieldHandler
+ *   The emptyFieldHandler object for the instance's entity.
+ */
+function empty_fields_load_plugin($view_mode_settings) {
+  static $plugins;
+  $key = implode(':', $view_mode_settings);
+  if (empty($plugins[$key]) && class_exists($view_mode_settings['empty_fields_handler'])) {
+    $plugin_type = $view_mode_settings['empty_fields_handler'];
+    $plugin = new $plugin_type();
+    foreach ($plugin->defaults() as $field_id => $field) {
+      $field_name = empty_fields_generate_field_name($field_id, $plugin_type);
+      $plugin->options[$field_id] = !empty($view_mode_settings[$field_name]) ? $view_mode_settings[$field_name] : $default;
+    }
+    $plugins[$key] = $plugin;
+  }
+  return isset($plugins[$key]) ? $plugins[$key] : FALSE;
+}
+
+/**
+ * Utility: generate a field id to be used in the display of the plugin's form.
+ *
+ * @param string $field_id
+ *   The id of the field as specified in the plugin.
+ *
+ * @param string $class_name
+ *   The configured emptyFieldHandler for the field instance.
+ *
+ * @return string
+ *   The id of the field as displayed to the user.
+ */
+function empty_fields_generate_field_name($field_id, $class_name) {
+  return 'empty_fields_' . strtolower($class_name) . '_' . $field_id;
+}
+
+/**
+ * Implments hook_empty_fields_info().
+ */
+function empty_fields_empty_fields() {
+  $items = array(
+    'emptyFieldText' => array(
+      'title' => t('Display Custom Text'),
+    ),
+  );
+  return $items;
+}
+
+/**
+ * Utility: find plugins provided by modules implementing hook_empty_fields().
+ *
+ * @todo
+ *   Autoloading of subclasses or research module_invoke_all's cache.
+ */
+function empty_fields_plugins() {
+  static $empty_fields_plugins;
+  $empty_fields_plugins = empty($efplugins) ? module_invoke_all('empty_fields') : $efplugins;
+  return $empty_fields_plugins;
 }
 
 /**
@@ -24,114 +91,71 @@ function empty_fields_field_formatter_settings_summary_alter(&$summary, $context
   $display = $context['instance']['display'][$context['view_mode']];
   $settings = $display['settings'];
 
-  $summary = empty($summary) ? '' : $summary . '<br />';
-  $settings += array('display_empty' => '');
-  switch ($settings['display_empty']) {
-    case 'text':
-      $summary .= t('Displays empty field with custom text: %text', array('%text' => $settings['custom_text']));
-      break;
+  $plugin = empty_fields_load_plugin($settings);
 
-    case 'callback':
-      $callback = empty_fields_get_empty_field_callbacks($settings['empty_callback']);
-      if (function_exists($callback['callback'])) {
-        $summary .= t('Displays empty field using the callback: %text', array('%text' => $callback['label']));
-      }
-      else {
-        $summary .= t('Displays empty field using the callback: <em>Missing callback</em>');
-      }
-      break;
-
-    case 'default':
-      $summary .= t('Displays empty field using default');
-      break;
-
-    default:
-      $summary .= t('Empty field is hidden');
-      break;
+  if (method_exists($plugin, 'summaryText')) {
+    $summary .= '<br />' . $plugin->summaryText();
   }
-
 }
 
 /**
  * Implements hook_field_formatter_settings_form_alter().
+ *
+ * Generates the formatter settings forms from the available plugins.
  */
 function empty_fields_field_formatter_settings_form_alter(&$settings_form, $context) {
   $field = $context['field'];
   $display = $context['instance']['display'][$context['view_mode']];
   $settings = $display['settings'];
 
-  $settings_form['display_empty'] = array(
+  $settings_form['empty_fields_handler'] = array(
     '#type' => 'select',
     '#title' => t('Empty display options'),
-    '#default_value' => $settings['display_empty'],
+    '#default_value' => $settings['empty_fields_handler'],
     '#options' => array(
-      '' => t('Do not display'),
-      'text' => t('Display value'),
-      'callback' => t('Callback'),
-      'default' => t('Display default value (if set)'),
+      '' => t('Exclude field from output'),
     ),
   );
 
-  // We can not nest this field, so use a prefix / suffix with padding to help
-  // to provide context.
-  $settings_form['custom_text'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Custom value'),
-    '#default_value' => $settings['custom_text'],
-    '#description' => t('This populates the field with the specificied empty value.'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][display_empty]"]' => array('value' => 'text'),
-      ),
-    ),
-    '#prefix' => '<div style="padding: 0 2em;">',
-    '#suffix' => '</div>',
-    '#maxlength' => 255,
-  );
+  foreach (empty_fields_plugins() as $class_name => $something) {
+    $plugin = new $class_name();
 
-  $callbacks = empty_fields_get_empty_field_callbacks();
-  if (empty($callbacks)) {
-    unset($settings_form['display_empty']['#options']['callback']);
-  }
-  else {
-    $options = array();
-    foreach ($callbacks as $key => $info) {
-      $options[$key] = $info['label'];
-    }
-    $settings_form['empty_callback'] = array(
-      '#type' => 'select',
-      '#title' => t('Custom callbacks'),
-      '#default_value' => $settings['empty_callback'],
-      '#options' => $options,
-      '#states' => array(
+    foreach ($plugin->form() as $field_id => $field) {
+      $field_name = empty_fields_generate_field_name($field_id, $class_name);
+      $plugin->options[$field_id] = $settings[$field_name];
+      $field['#default_value'] = $settings[$field_name];
+      $field['#states'] = array(
         'visible' => array(
-          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][display_empty]"]' => array('value' => 'callback'),
+          ':input[name="fields[' . $context['field']['field_name'] . '][settings_edit_form][settings][empty_fields_handler]"]' => array('value' => $class_name),
         ),
-      ),
-      '#prefix' => '<div style="padding: 0 2em;">',
-      '#suffix' => '</div>',
-    );
+      );
+      $settings_form['empty_fields_handler']['#options'][$class_name] = $something['title'];
+      $settings_form[$field_name] = $field;
+    }
   }
 }
 
 /**
  * Implements hook_field_attach_view_alter().
+ *
+ * Overwrites the output of field.
  */
-function empty_fields_field_attach_view_alter(&$result, $context) {
+function empty_fields_field_attach_view_alter(&$output, $context) {
   if (empty($context['view_mode']) || empty($context['display']) || $context['view_mode'] != $context['display']) {
     return;
   }
+
   $view_mode = $context['view_mode'];
   $entity_type = $context['entity_type'];
   $entity = $context['entity'];
   $language = $context['language'];
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
-  $rendered_elements = element_children($result);
+  $rendered_elements = element_children($output);
 
   foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
     // Do not add field that is hidden in current display.
     $display = field_get_display($instance, $view_mode, $entity);
-    if ($display['type'] == 'hidden' || empty($display['settings']['display_empty'])) {
+    if ($display['type'] == 'hidden' || empty($display['settings']['empty_fields_handler'])) {
       continue;
     }
 
@@ -145,13 +169,15 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
       continue;
     }
 
+    $plugin_type = $display['settings']['empty_fields_handler'];
+
     if (in_array($field_name, $rendered_elements)) {
       switch ($field['type']) {
         case 'text':
         case 'text_with_summary':
         case 'text_summary_or_trimmed':
-          foreach (element_children($result[$field_name]) as $delta) {
-            if (!empty($result[$field_name][$delta]['#markup']) || strlen($result[$field_name][$delta]['#markup'])) {
+          foreach (element_children($output[$field_name]) as $delta) {
+            if (!empty($output[$field_name][$delta]['#markup']) || strlen($output[$field_name][$delta]['#markup'])) {
               continue 3;
             }
           }
@@ -163,107 +189,32 @@ function empty_fields_field_attach_view_alter(&$result, $context) {
       }
     }
 
-    $markup = '';
-    switch ($display['settings']['display_empty']) {
-      case 'text':
-        if (!empty($display['settings']['custom_text'])) {
-          global $user;
-          $args = array(
-            $entity_type => $entity,
-            'user' => $user,
-          );
-          $markup = t($display['settings']['custom_text']);
-          $markup = token_replace($markup, $args, array('clear' => TRUE));
-          $markup = filter_xss_admin($markup);
-        }
-        break;
+    // Load the configured plugin.
+    $plugin = empty_fields_load_plugin($display['settings']);
 
-      case 'callback':
-        $markup = FALSE;
-        if ($callback = empty_fields_get_empty_field_callbacks($display['settings']['empty_callback'])) {
-          $func = $callback['callback'];
-          if (function_exists($func)) {
-            $field_context = $context;
-            $field_context['display'] = $display;
-            $field_context['instance'] = $instance;
-            $field_context['field'] = $field;
-            $markup = $func($field_name, $field_context);
-          }
-        }
-        if ($markup === FALSE || is_null($markup)) {
-          continue 2;
-        }
-        break;
+    if ($plugin) {
+      $markup = $plugin->react($context);
 
-      case 'default':
-        $items = field_get_default_value($entity_type, $entity, $field, $instance, $language);
-        $items = _field_filter_items($field, $items);
-        if (!empty($items)) {
-          // Too late to allow other modules to alter the results, so only
-          // display the first item.
-          $item = array_shift($items);
-          $element = field_view_value($entity_type, $entity, $field_name, $item, $display, $language);
-          if ($element) {
-            $result[$field_name] = array(
-              '#theme' => 'field',
-              '#title' => $instance['label'],
-              '#label_display' => $display['label'],
-              '#field_type' => $field['type'],
-              '#field_name' => $field_name,
-              '#bundle' => $bundle,
-              '#object' => $entity,
-              '#items' => array(0 => $item),
-              '#entity_type' => $entity_type,
-              '#weight' => $display['weight'],
-              '0' => $element,
-            );
-          }
-        }
-        // Fall through.
-      default:
-        continue 2;
-    }
+      $output[$field_name] = array(
+        '#theme' => 'field',
+        '#title' => $instance['label'],
+        '#label_display' => $display['label'],
+        '#weight' => $display['weight'],
+        '#field_type' => $field['type'],
+        '#field_name' => $field_name,
+        '#bundle' => $bundle,
+        '#object' => $entity,
+        '#entity_type' => $entity_type,
+        '#items' => array(
+          0 => array('value' => $markup),
+        ),
+        0 => array(
+          '#markup' => $markup,
+        ),
+      );
 
-    $result[$field_name] = array(
-      '#theme' => 'field',
-      '#title' => $instance['label'],
-      '#label_display' => $display['label'],
-      '#field_type' => $field['type'],
-      '#field_name' => $field_name,
-      '#bundle' => $bundle,
-      '#object' => $entity,
-      '#items' => array(
-        0 => array('value' => $markup),
-      ),
-      '#entity_type' => $entity_type,
-      '#weight' => $display['weight'],
-      0 => array(
-        '#markup' => $markup,
-      ),
-    );
-  }
-}
-
-/**
- * Get all the empty field callbacks via hook_empty_field_callbacks().
- */
-function empty_fields_get_empty_field_callbacks($callback = NULL) {
-  $info = &drupal_static(__FUNCTION__);
-
-  if (!isset($info)) {
-    $cid = "empty_fields:" . $GLOBALS['language']->language;
-    if ($cache = cache_get($cid)) {
-      $info = $cache->data;
-    }
-    else {
-      $info = module_invoke_all('empty_field_callbacks');
-      drupal_alter('empty_field_callbacks', $info);
-      cache_set($cid, $info);
+      // Allow plugins to alter output.
+      $plugin->alterOutput($output[$field_name], $context);
     }
   }
-
-  if (isset($callback)) {
-    return isset($info[$callback]) ? $info[$callback] : NULL;
-  }
-  return $info;
 }
