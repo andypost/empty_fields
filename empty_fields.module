@@ -117,9 +117,8 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
     ),
   );
 
-  foreach (empty_fields_plugins() as $class_name => $something) {
+  foreach (empty_fields_plugins() as $class_name => $class_settings) {
     $plugin = new $class_name();
-
     foreach ($plugin->form() as $field_id => $field) {
       $field_name = empty_fields_generate_field_name($field_id, $class_name);
       $plugin->options[$field_id] = $settings[$field_name];
@@ -129,7 +128,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
           ':input[name="fields[' . $context['field']['field_name'] . '][settings_edit_form][settings][empty_fields_handler]"]' => array('value' => $class_name),
         ),
       );
-      $settings_form['empty_fields_handler']['#options'][$class_name] = $something['title'];
+      $settings_form['empty_fields_handler']['#options'][$class_name] = $class_settings['title'];
       $settings_form[$field_name] = $field;
     }
   }
