@@ -9,11 +9,10 @@
  *
  * Defines a way to easily create empty field reaction plugins.
  *
- * @see field_empty_handler_text.
+ * @see field_empty_handler_text().
  */
 abstract class EmptyFieldHandler {
-  public $title;
-  public $description;
+
   public $options;
 
   /**
@@ -24,17 +23,21 @@ abstract class EmptyFieldHandler {
   }
 
   /**
-   * Declare default options.
+   * Default options that map to FAPI elements in EmptyFieldHandler::form().
    */
-  abstract public function defaults();
+  public function defaults() {
+    return array();
+  }
 
   /**
-   * Provide options to configure content.
+   * Provide FAPI elements to configure the empty field rendering.
    */
-  abstract public function form(&$form_state);
+  public function form() {
+    return array();
+  }
 
   /**
-   * Provide Summary text.
+   * Provide the summary text to display on the field display settings page.
    */
   abstract public function summaryText();
 
@@ -44,7 +47,7 @@ abstract class EmptyFieldHandler {
   abstract public function react($context);
 
   /**
-   * Provide a method to alter the output of the plugin. This is optional.
+   * Provide a method to alter the output of the plugin.
    */
   public function alterOutput(&$output, $context) {
 

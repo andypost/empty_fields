@@ -27,11 +27,11 @@ class EmptyFieldText extends EmptyFieldHandler {
    * @return array
    *   A FAPI array to be used in configuration of this empty text plugin.
    */
-  public function form(&$form_state = NULL) {
+  public function form() {
     $form['empty_text'] = array(
       '#type' => 'textarea',
       '#title' => t('Display Custom Text'),
-      '#default_value' => isset($form_state['empty_text']) ? $form_state['empty_text'] : $this->options['empty_text'],
+      '#default_value' => isset($this->options['empty_text']) ? $this->options['empty_text'] : '',
       '#description' => t('Display text if the field is empty.'),
     );
 

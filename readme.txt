@@ -1,5 +1,5 @@
-Empty fields module - http://drupal.org/sandbox/aland/1658254
-=============================================================
+Empty fields module - http://drupal.org/project/empty_fields
+============================================================
 
 DESCRIPTION
 ------------
@@ -27,69 +27,69 @@ Read more about installing modules at http://drupal.org/node/70151
 
 API
 ---
-For specific use-cases, you can define a custom callback to generate
-dynamic content.
+For specific use-cases, you can define a custom callback to generate dynamic
+content.
 
-Firstly, implement hook_empty_field_callbacks()
+Firstly, implement hook_empty_fields(). This returns an array indexed by the
+class name that implements the handler.
+
+This differs from version 1.x that used hook_empty_field_callbacks().
 
 <?php
 /**
- * Implements hook_empty_field_callbacks().
+ * Implements hook_empty_fields().
  */
-function hook_empty_field_callbacks() {
-  $info['mymodule_datetimes'] = array(
-    'label' => t('Date and time summary'),
-    'callback' => 'mymodule_empty_datetime_field_callback',
+function HOOK_empty_fields() {
+  $items = array(
+    'CurrentTimeEmptyFieldText' => array(
+      'title' => t('Display current time if empty'),
+    ),
   );
-  return $info;
+  return $items;
 }
 ?>
 
-Then implement the callback.
+Create a new concrete class that extends the abstract class EmptyFieldHandler.
 
 <?php
 /**
- * Callback defined in hook_empty_field_callbacks().
+ * @file
+ * Contains the CurrentTimeEmptyFieldText plugin for EmptyFieldHandler.
  */
-function mymodule_empty_datetime_field_callback($field_name, $context) {
-  return format_date(time());
-}
-?>
-
-The context has the entity_type, entity, view_mode as well as the empty
-field details, field and instance. If the callback returns FALSE or NULL,
-the empty field will not be rendered.
-
-This allows for more complex conditional includes:
-<?php
-/**
- * Callback defined in hook_empty_field_callbacks().
- *
- * This tries to generate a date description if the date description is empty.
- * This description is based off other fields on the node.
- */
-function mymodule_empty_datetime_field_callback($field_name, $context) {
-  if ($field_name == 'field_date_text' && $context['entity_type'] == 'node') {
-    if ($desc = mymodule_get_date_description($context['entity'])) {
-      return $desc;
-    }
-    else {
-      // Return FALSE or NULL as we can not calculate the text description.
-      return FALSE;
-    }
-  }
-  // If another field, return nothing so that the empty field is not rendered.
-}
 
 /**
- * Calculates the text from the field field_dates.
+ * Defines CurrentTimeEmptyFieldText class.
  */
-function mymodule_get_date_description($node) {
-  if ($items = field_get_items('node', $node, 'field_dates')) {
-    return t("We have dates, but we aren't telling you!");
+class CurrentTimeEmptyFieldText extends EmptyFieldHandler {
+
+  /**
+   * Implementation of EmptyFieldText::react().
+   */
+  public function react($context) {
+    return format_date(time());
+  }
+
+  /**
+   * Implementation of EmptyFieldText:summaryText().
+   */
+  public function summaryText() {
+    return t('Empty Text: current time');
   }
 }
+
 ?>
+
+Register this class in your modules info file
+
+<code>
+files[] = plugins/empty_fields_handler_current_time.inc
+</code>
+
+The context has the entity_type, entity, view_mode as well as the empty field
+details, field and instance. 
+
+If the callback is empty or a zero-length string, the empty field will not be
+rendered.
 
 ACKNOWLEDGEMENTS
 ----------------
