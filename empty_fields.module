@@ -31,13 +31,13 @@ function empty_fields_field_formatter_info_alter(&$info) {
  * @return emptyfieldHandler
  *   The emptyFieldHandler object for the instance's entity.
  */
-function empty_fields_load_plugin($view_mode_settings) {
+function empty_fields_load_plugin($instance, $view_mode_settings) {
   static $plugins;
-  $key = implode(':', $view_mode_settings);
-  if (empty($plugins[$key]) && class_exists($view_mode_settings['empty_fields_handler'])) {
+  $key = $instance['entity_type'] . '-' . $instance['bundle'] . '-' . $instance['field_name'];
+  if (empty($plugins[$key]) && !empty($view_mode_settings['empty_fields_handler']) && class_exists($view_mode_settings['empty_fields_handler'])) {
     $plugin_type = $view_mode_settings['empty_fields_handler'];
     $plugin = new $plugin_type();
-    foreach ($plugin->defaults() as $field_id => $default) {
+    foreach ($plugin->defaults() as $field_id => $field) {
       $field_name = empty_fields_generate_field_name($field_id, $plugin_type);
       $plugin->options[$field_id] = !empty($view_mode_settings[$field_name]) ? $view_mode_settings[$field_name] : $default;
     }
@@ -93,10 +93,11 @@ function empty_fields_field_formatter_settings_summary_alter(&$summary, $context
   $display = $context['instance']['display'][$context['view_mode']];
   $settings = $display['settings'];
 
-  $plugin = empty_fields_load_plugin($settings);
-
-  if (method_exists($plugin, 'summaryText')) {
-    $summary .= '<br />' . $plugin->summaryText();
+  if ($plugin = empty_fields_load_plugin($context['instance'], $settings)) {
+    $summary .= $plugin->summaryText();
+  }
+  elseif (!empty($settings['empty_fields_handler'])) {
+    $summary .=  '<br />' . t('Missing empty field plugin: @plugin', array('@plugin' => $settings['empty_fields_handler']));
   }
   else {
     $summary .= '<br />' . t('Empty field is hidden');
@@ -206,28 +207,28 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
     }
 
     // Load the configured plugin.
-    $plugin = empty_fields_load_plugin($display['settings']);
+    $plugin = empty_fields_load_plugin($instance, $display['settings']);
 
     if ($plugin) {
       $markup = $plugin->react($context);
       // Do not render empty values.
       if (!empty($markup) || drupal_strlen($markup)) {
         $output[$field_name] = array(
-            '#theme' => 'field',
-            '#title' => $instance['label'],
-            '#label_display' => $display['label'],
-            '#weight' => $display['weight'],
-            '#field_type' => $field['type'],
-            '#field_name' => $field_name,
-            '#bundle' => $bundle,
-            '#object' => $entity,
-            '#entity_type' => $entity_type,
-            '#items' => array(
-                0 => array('value' => $markup),
-            ),
-            0 => array(
-                '#markup' => $markup,
-            ),
+          '#theme' => 'field',
+          '#title' => $instance['label'],
+          '#label_display' => $display['label'],
+          '#weight' => $display['weight'],
+          '#field_type' => $field['type'],
+          '#field_name' => $field_name,
+          '#bundle' => $bundle,
+          '#object' => $entity,
+          '#entity_type' => $entity_type,
+          '#items' => array(
+            0 => array('value' => $markup),
+          ),
+          0 => array(
+            '#markup' => $markup,
+          ),
         );
 
         // Allow plugins to alter output.
@@ -236,4 +237,3 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
     }
   }
 }
-
