@@ -37,7 +37,7 @@ function empty_fields_load_plugin($view_mode_settings) {
   if (empty($plugins[$key]) && class_exists($view_mode_settings['empty_fields_handler'])) {
     $plugin_type = $view_mode_settings['empty_fields_handler'];
     $plugin = new $plugin_type();
-    foreach ($plugin->defaults() as $field_id => $field) {
+    foreach ($plugin->defaults() as $field_id => $default) {
       $field_name = empty_fields_generate_field_name($field_id, $plugin_type);
       $plugin->options[$field_id] = !empty($view_mode_settings[$field_name]) ? $view_mode_settings[$field_name] : $default;
     }
@@ -229,11 +229,11 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
                 '#markup' => $markup,
             ),
         );
-      
+
         // Allow plugins to alter output.
         $plugin->alterOutput($output[$field_name], $context);
       }
     }
   }
 }
-      
+
