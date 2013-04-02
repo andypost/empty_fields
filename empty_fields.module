@@ -191,6 +191,7 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
     if (in_array($field_name, $rendered_elements)) {
       switch ($field['type']) {
         case 'text':
+        case 'text_long':
         case 'text_with_summary':
         case 'text_summary_or_trimmed':
           foreach (element_children($output[$field_name]) as $delta) {
