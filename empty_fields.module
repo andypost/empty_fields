@@ -223,6 +223,7 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
           '#bundle' => $bundle,
           '#object' => $entity,
           '#entity_type' => $entity_type,
+          '#view_mode' => $view_mode,
           '#items' => array(
             0 => array('value' => $markup),
           ),
