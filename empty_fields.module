@@ -126,7 +126,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
   foreach (empty_fields_plugins() as $class_name => $class_settings) {
     $settings_form['empty_fields_handler']['#options'][$class_name] = $class_settings['title'];
     $plugin = new $class_name();
-    foreach ($plugin->form() as $field_id => $field) {
+    foreach ($plugin->form($context) as $field_id => $field) {
       $field_name = empty_fields_generate_field_name($field_id, $class_name);
       $plugin->options[$field_id] = $settings[$field_name];
       $field['#default_value'] = $settings[$field_name];

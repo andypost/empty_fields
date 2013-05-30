@@ -32,7 +32,7 @@ abstract class EmptyFieldHandler {
   /**
    * Provide FAPI elements to configure the empty field rendering.
    */
-  public function form() {
+  public function form($context) {
     return array();
   }
 

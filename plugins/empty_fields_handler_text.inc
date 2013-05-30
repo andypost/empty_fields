@@ -27,7 +27,7 @@ class EmptyFieldText extends EmptyFieldHandler {
    * @return array
    *   A FAPI array to be used in configuration of this empty text plugin.
    */
-  public function form() {
+  public function form($context) {
     $form['empty_text'] = array(
       '#type' => 'textarea',
       '#title' => t('Display Custom Text'),
