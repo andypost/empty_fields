@@ -165,10 +165,16 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
   }
   $context['entity']->empty_fields_processed = TRUE;
 
-  $view_mode = $context['view_mode'];
   $entity_type = $context['entity_type'];
   $entity = $context['entity'];
-  $language = $context['language'];
+  // Special switch when rendered using field_view_field().
+  if ($context['view_mode'] == '_custom' && isset($context['display'])) {
+    $view_mode = $context['display'];
+  }
+  else {
+    $view_mode = $context['view_mode'];
+  }
+
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
   $rendered_elements = element_children($output);
 
@@ -222,6 +228,12 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
       $markup = $plugin->react($context);
       // Do not render empty values.
       if (!empty($markup) || drupal_strlen($markup)) {
+        if (empty($context['language'])) {
+          $language = field_language($entity_type, $entity, $field_name);
+        }
+        else {
+          $language = $context['language'];
+        }
         $output[$field_name] = array(
           '#theme' => 'field',
           '#title' => $instance['label'],
@@ -233,6 +245,7 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
           '#object' => $entity,
           '#entity_type' => $entity_type,
           '#view_mode' => $view_mode,
+          '#language' => $language,
           '#formatter' => $display['type'],
           '#items' => array(
             0 => array('value' => $markup),
