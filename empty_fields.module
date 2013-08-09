@@ -45,6 +45,10 @@ function empty_fields_load_plugin($instance, $view_mode_settings) {
       $field_name = empty_fields_generate_field_name($field_id, $plugin_type);
       $plugin->options[$field_id] = !empty($view_mode_settings[$field_name]) ? $view_mode_settings[$field_name] : $default;
     }
+    // Don't cache plugins with missing instance parameters.
+    if ($key = 'custom-custom-custom') {
+      return $plugin;
+    }
     $plugins[$key] = $plugin;
   }
   return isset($plugins[$key]) ? $plugins[$key] : FALSE;
