@@ -33,7 +33,11 @@ function empty_fields_field_formatter_info_alter(&$info) {
  */
 function empty_fields_load_plugin($instance, $view_mode_settings) {
   static $plugins;
-  $key = $instance['entity_type'] . '-' . $instance['bundle'] . '-' . $instance['field_name'];
+  $field_name = isset($instance['field_name']) ? $instance['field_name'] : 'custom';
+  $entity_type = isset($instance['entity_type']) ? $instance['entity_type'] : 'custom';
+  $bundle = isset($instance['bundle']) ? $instance['bundle'] : 'custom';
+  $key = $entity_type . '-' . $bundle . '-' . $field_name;
+
   if (empty($plugins[$key]) && !empty($view_mode_settings['empty_fields_handler']) && class_exists($view_mode_settings['empty_fields_handler'])) {
     $plugin_type = $view_mode_settings['empty_fields_handler'];
     $plugin = new $plugin_type();
