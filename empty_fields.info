@@ -4,5 +4,7 @@ core = 7.x
 package = Fields
 files[] = plugins/empty_fields_handler.inc
 files[] = plugins/empty_fields_handler_text.inc
+files[] = plugins/empty_fields_handler_label.inc
+
 dependencies[] = field
 dependencies[] = field_formatter_settings

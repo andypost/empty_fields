@@ -78,6 +78,9 @@ function empty_fields_empty_fields() {
     'EmptyFieldText' => array(
       'title' => t('Display Custom Text'),
     ),
+    'EntityLabelEmptyFieldHandler' => array(
+      'title' => t('Display Entity Label'),
+    ),
   );
   return $items;
 }
