@@ -141,9 +141,17 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
       $field_name = empty_fields_generate_field_name($field_id, $class_name);
       $plugin->options[$field_id] = $settings[$field_name];
       $field['#default_value'] = $settings[$field_name];
+      if ($context['instance']['entity_type'] == 'ctools' && $context['view_mode'] == '_custom') {
+        // The Empty display options element name on Views field options.
+        $select_name = 'options[settings][empty_fields_handler]';
+      }
+      else {
+        // The Empty display options element name on field display settings.
+        $select_name = 'fields[' . $context['field']['field_name'] . '][settings_edit_form][settings][empty_fields_handler]';
+      }
       $field['#states'] = array(
         'visible' => array(
-          ':input[name="fields[' . $context['field']['field_name'] . '][settings_edit_form][settings][empty_fields_handler]"]' => array('value' => $class_name),
+          ':input[name="' . $select_name . '"]' => array('value' => $class_name),
         ),
       );
       $settings_form[$field_name] = $field;
@@ -157,7 +165,7 @@ function empty_fields_field_formatter_settings_form_alter(&$settings_form, $cont
  * Overwrites the output of field.
  */
 function empty_fields_field_attach_view_alter(&$output, $context) {
-  if (empty($context['view_mode']) || empty($context['display']) || $context['view_mode'] != $context['display']) {
+  if (empty($context['view_mode']) || empty($context['display'])) {
     return;
   }
 
@@ -170,13 +178,7 @@ function empty_fields_field_attach_view_alter(&$output, $context) {
 
   $entity_type = $context['entity_type'];
   $entity = $context['entity'];
-  // Special switch when rendered using field_view_field().
-  if ($context['view_mode'] == '_custom' && isset($context['display'])) {
-    $view_mode = $context['display'];
-  }
-  else {
-    $view_mode = $context['view_mode'];
-  }
+  $view_mode = $context['view_mode'];
 
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
   $rendered_elements = element_children($output);
