@@ -28,17 +28,18 @@ function empty_fields_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_field_formatter_third_party_settings_form().
  */
 function empty_fields_field_formatter_third_party_settings_form(FormatterInterface $plugin, FieldDefinitionInterface $field_definition, $view_mode, $form, FormStateInterface $form_state) {
-  // @todo Implement plugin manager.
-  $element['handler'] = array(
+  /** @var \Drupal\empty_fields\EmptyFieldsPluginManager manager */
+  $manager = \Drupal::service('plugin.manager.empty_fields');
+  $options = ['' => t('Exclude field from output')];
+  foreach ($manager->getDefinitions() as $id => $data) {
+    $options[$id] = $data['title'];
+  }
+  $element['handler'] = [
     '#type' => 'select',
     '#title' => t('Empty display options'),
     '#default_value' => $plugin->getThirdPartySetting('empty_fields', 'handler', ''),
-    '#options' => array(
-      '' => t('Exclude field from output'),
-      // @todo Add other plugins from manager and forms with form() method.
-      'nbsp' => t('Empty space'),
-    ),
-  );
+    '#options' => $options,
+  ];
   return $element;
 }
 
@@ -46,10 +47,12 @@ function empty_fields_field_formatter_third_party_settings_form(FormatterInterfa
  * Implements hook_field_formatter_settings_summary_alter().
  */
 function empty_fields_field_formatter_settings_summary_alter(&$summary, $context) {
-  // @todo Get summary from handler with summaryText() method.
-  $handler = $context['formatter']->getThirdPartySetting('empty_fields', 'handler', '');
-  if ($handler === 'nbsp') {
-    $summary[] = t('Empty text displayed.');
+  if ($handler = $context['formatter']->getThirdPartySetting('empty_fields', 'handler', '')) {
+    /** @var \Drupal\Core\Plugin\DefaultPluginManager manager */
+    $manager = \Drupal::service('plugin.manager.empty_fields');
+    /** @var \Drupal\empty_fields\EmptyFieldPluginInterface $plugin */
+    $plugin = $manager->createInstance($handler);
+    $summary[] = $plugin->summaryText();
   }
 }
 
@@ -62,11 +65,14 @@ function empty_fields_entity_display_build_alter(&$build, $context) {
   /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
   $display = $context['display'];
   foreach (Element::children($build) as $field_name) {
-    if ($entity->get($field_name)->isEmpty() && ($handler = $display->getRenderer($field_name)->getThirdPartySetting('empty_fields', 'handler'))) {
-      // @todo Get render with react() method.
-      if ($handler === 'nbsp') {
-        $markup = ['#markup' => '&nbsp;'];
-      }
+    if ($entity->get($field_name)
+        ->isEmpty() && ($handler = $display->getRenderer($field_name)
+        ->getThirdPartySetting('empty_fields', 'handler'))
+    ) {
+      /** @var \Drupal\Core\Plugin\DefaultPluginManager manager */
+      $manager = \Drupal::service('plugin.manager.empty_fields');
+      /** @var \Drupal\empty_fields\EmptyFieldPluginInterface $plugin */
+      $plugin = $manager->createInstance($handler);
       /** @var \Drupal\Core\Field\FieldDefinitionInterface $definition */
       $definition = $entity->get($field_name)->getFieldDefinition();
       $component = $display->getComponent($field_name);
@@ -87,7 +93,7 @@ function empty_fields_entity_display_build_alter(&$build, $context) {
           '#is_multiple' => FALSE,
           // Use simple formatter.
           '#formatter' => 'string',
-          '0' => $markup,
+          '0' => $plugin->react($context),
         ] + $build[$field_name];
     }
   }
